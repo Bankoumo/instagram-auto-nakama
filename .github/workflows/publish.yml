@@ -1,0 +1,38 @@
+name: Publier sur Instagram
+
+on:
+  schedule:
+    - cron: "47 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: publish
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Publier le post du jour
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: python publish.py
+
+      - name: Enregistrer dans le journal
+        run: |
+          if [ -n "$(git status --porcelain posted-log.json)" ]; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add posted-log.json
+            git commit -m "Journal : post publié"
+            git push
+          fi
